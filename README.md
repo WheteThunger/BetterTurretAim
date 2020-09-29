@@ -9,7 +9,7 @@ Notes:
 
 ## Permissions
 
-- `betterturretaim.use` -- Improves the aiming ability of auto turrets owned by players who have been granted this permission. Has no effect unless the configuration option `RequirePermission` is `true`.
+- `betterturretaim.use` -- Improves the aiming ability of auto turrets owned by players who have been granted this permission. Only necessary with the configuration option `RequirePermission: true`.
 
 ## Configuration
 
