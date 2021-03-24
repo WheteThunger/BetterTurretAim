@@ -2,17 +2,21 @@
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Oxide.Core;
+using Oxide.Core.Plugins;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Better Turret Aim", "WhiteThunder", "1.0.0")]
+    [Info("Better Turret Aim", "WhiteThunder", "1.0.2")]
     [Description("Improves the speed at which auto turrets aim at their current target.")]
     internal class BetterTurretAim : CovalencePlugin
     {
         #region Fields
+
+        [PluginReference]
+        Plugin ImprovedTurretAim;
 
         private static BetterTurretAim _pluginInstance;
 
@@ -43,6 +47,9 @@ namespace Oxide.Plugins
         {
             if (!initialBoot)
                 InitializeAutoTurrets();
+
+            if (ImprovedTurretAim != null)
+                LogWarning("Please remove ImprovedTurretAim.cs. The plugin was supposed to be renamed before release but a uMod website issue caused ImprovedTurretAim.cs to be downloaded instead of BetterTurretAim.cs.");
         }
 
         private void Unload()
