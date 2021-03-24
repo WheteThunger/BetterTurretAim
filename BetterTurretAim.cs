@@ -99,7 +99,7 @@ namespace Oxide.Plugins
             foreach (var autoTurret in BaseNetworkable.serverEntities.OfType<AutoTurret>())
             {
                 var ownerId = autoTurret.OwnerID;
-                
+
                 // If a userId was specified, skip updating any turrets that don't belong to that user
                 if (userIdString != string.Empty && userIdString != ownerId.ToString())
                     continue;
@@ -173,11 +173,16 @@ namespace Oxide.Plugins
 
             private void MaybeUpdateAim()
             {
+                PluginInstance.TrackStart();
+
                 if (Turret == null ||
                     Turret.GetAttachedWeapon() == null ||
                     !Turret.HasTarget() ||
                     Turret.aimDir == Vector3.zero)
+                {
+                    PluginInstance.TrackEnd();
                     return;
+                }
 
                 var lookRotation = Quaternion.LookRotation(Turret.aimDir);
                 var targetYaw = Quaternion.Euler(0, lookRotation.eulerAngles.y, 0);
@@ -193,6 +198,8 @@ namespace Oxide.Plugins
 
                 if (gunPitch != targetPitch)
                     Turret.gun_pitch.transform.localRotation = Quaternion.Lerp(gunPitch, targetPitch, interpolation);
+
+                PluginInstance.TrackEnd();
             }
         }
 
