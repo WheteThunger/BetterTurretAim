@@ -14,11 +14,11 @@ namespace Oxide.Plugins
     {
         #region Fields
 
-        private static BetterTurretAim PluginInstance;
-
-        private Configuration PluginConfig;
+        private static BetterTurretAim _pluginInstance;
 
         private const string PermissionUse = "betterturretaim.use";
+
+        private Configuration _pluginConfig;
 
         #endregion
 
@@ -26,11 +26,11 @@ namespace Oxide.Plugins
 
         private void Init()
         {
-            PluginInstance = this;
+            _pluginInstance = this;
 
             permission.RegisterPermission(PermissionUse, this);
 
-            if (!PluginConfig.RequirePermission)
+            if (!_pluginConfig.RequirePermission)
             {
                 Unsubscribe(nameof(OnGroupPermissionGranted));
                 Unsubscribe(nameof(OnGroupPermissionRevoked));
@@ -48,7 +48,7 @@ namespace Oxide.Plugins
         private void Unload()
         {
             DestroyAimComponents();
-            PluginInstance = null;
+            _pluginInstance = null;
         }
 
         private void OnEntitySpawned(AutoTurret autoTurret) =>
@@ -117,10 +117,10 @@ namespace Oxide.Plugins
             if (autoTurret is NPCAutoTurret)
                 return;
 
-            if (PluginConfig.OnlyVehicles && GetParentVehicle(autoTurret) == null)
+            if (_pluginConfig.OnlyVehicles && GetParentVehicle(autoTurret) == null)
                 return;
 
-            if (!PluginConfig.RequirePermission)
+            if (!_pluginConfig.RequirePermission)
             {
                 ImproveAiming(autoTurret);
                 return;
@@ -159,7 +159,7 @@ namespace Oxide.Plugins
 
         #region Helper Classes
 
-        internal class TurretAimImprover : FacepunchBehaviour
+        private class TurretAimImprover : FacepunchBehaviour
         {
             private AutoTurret Turret;
 
@@ -167,20 +167,20 @@ namespace Oxide.Plugins
             {
                 Turret = GetComponent<AutoTurret>();
 
-                var tickInterval = PluginInstance.PluginConfig.UpdateIntervalSeconds;
+                var tickInterval = _pluginInstance._pluginConfig.UpdateIntervalSeconds;
                 InvokeRandomized(MaybeUpdateAim, UnityEngine.Random.Range(0f, 1f), tickInterval, tickInterval * 0.25f);
             }
 
             private void MaybeUpdateAim()
             {
-                PluginInstance.TrackStart();
+                _pluginInstance.TrackStart();
 
                 if (Turret == null ||
                     Turret.GetAttachedWeapon() == null ||
                     !Turret.HasTarget() ||
                     Turret.aimDir == Vector3.zero)
                 {
-                    PluginInstance.TrackEnd();
+                    _pluginInstance.TrackEnd();
                     return;
                 }
 
@@ -191,7 +191,7 @@ namespace Oxide.Plugins
                 var gunYaw = Turret.gun_yaw.transform.rotation;
                 var gunPitch = Turret.gun_pitch.transform.localRotation;
 
-                var interpolation = PluginInstance.PluginConfig.Interpolation;
+                var interpolation = _pluginInstance._pluginConfig.Interpolation;
 
                 if (gunYaw != targetYaw)
                     Turret.gun_yaw.transform.rotation = Quaternion.Lerp(gunYaw, targetYaw, interpolation);
@@ -199,7 +199,7 @@ namespace Oxide.Plugins
                 if (gunPitch != targetPitch)
                     Turret.gun_pitch.transform.localRotation = Quaternion.Lerp(gunPitch, targetPitch, interpolation);
 
-                PluginInstance.TrackEnd();
+                _pluginInstance.TrackEnd();
             }
         }
 
@@ -207,7 +207,7 @@ namespace Oxide.Plugins
 
         #region Configuration
 
-        internal class Configuration : SerializableConfiguration
+        private class Configuration : SerializableConfiguration
         {
             [JsonProperty("RequirePermission")]
             public bool RequirePermission = true;
@@ -222,14 +222,20 @@ namespace Oxide.Plugins
             public float Interpolation = 0.5f;
         }
 
-        internal class SerializableConfiguration
+        private Configuration GetDefaultConfig() => new Configuration();
+
+        #endregion
+
+        #region Configuration Boilerplate
+
+        private class SerializableConfiguration
         {
             public string ToJson() => JsonConvert.SerializeObject(this);
 
             public Dictionary<string, object> ToDictionary() => JsonHelper.Deserialize(ToJson()) as Dictionary<string, object>;
         }
 
-        internal static class JsonHelper
+        private static class JsonHelper
         {
             public static object Deserialize(string json) => ToObject(JToken.Parse(json));
 
@@ -251,7 +257,7 @@ namespace Oxide.Plugins
             }
         }
 
-        private bool MaybeUpdateConfig(Configuration config)
+        private bool MaybeUpdateConfig(SerializableConfiguration config)
         {
             var currentWithDefaults = config.ToDictionary();
             var currentRaw = Config.ToDictionary(x => x.Key, x => x.Value);
@@ -291,20 +297,20 @@ namespace Oxide.Plugins
             return changed;
         }
 
-        protected override void LoadDefaultConfig() => PluginConfig = new Configuration();
+        protected override void LoadDefaultConfig() => _pluginConfig = GetDefaultConfig();
 
         protected override void LoadConfig()
         {
             base.LoadConfig();
             try
             {
-                PluginConfig = Config.ReadObject<Configuration>();
-                if (PluginConfig == null)
+                _pluginConfig = Config.ReadObject<Configuration>();
+                if (_pluginConfig == null)
                 {
                     throw new JsonException();
                 }
 
-                if (MaybeUpdateConfig(PluginConfig))
+                if (MaybeUpdateConfig(_pluginConfig))
                 {
                     LogWarning("Configuration appears to be outdated; updating and saving");
                     SaveConfig();
@@ -320,7 +326,7 @@ namespace Oxide.Plugins
         protected override void SaveConfig()
         {
             Log($"Configuration changes saved to {Name}.json");
-            Config.WriteObject(PluginConfig, true);
+            Config.WriteObject(_pluginConfig, true);
         }
 
         #endregion
